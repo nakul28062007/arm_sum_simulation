@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ARM Simulator: Sum of N Natural Numbers</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@400;600&display=swap">
+<style>
+:root{--bg:#eef1f5;--card:#fff;--ink:#16202e;--mut:#5d6b80;--line:#d5dbe5;--acc:#0b6bcb;--hot:#ffe08a;--chg:#ffc9c0;--ok:#127a43;--chip:#dbe7f6;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0e141c;--card:#161e29;--ink:#e6ebf2;--mut:#93a1b5;--line:#2a3544;--acc:#6db3ff;--hot:#5a4a10;--chg:#6b2b25;--ok:#5fd493;--chip:#223249}}
+:root[data-theme="dark"]{--bg:#0e141c;--card:#161e29;--ink:#e6ebf2;--mut:#93a1b5;--line:#2a3544;--acc:#6db3ff;--hot:#5a4a10;--chg:#6b2b25;--ok:#5fd493;--chip:#223249}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 "IBM Plex Sans",system-ui,sans-serif}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);background:var(--bg);z-index:10}
+main{max-width:1000px;margin:0 auto;padding:20px 16px 40px}
+h1{font-size:24px;margin:0 0 4px;font-weight:600}
+.sub{color:var(--mut);margin:0 0 18px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media(max-width:760px){.grid{grid-template-columns:1fr}}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px;min-width:0}
+h2{font-size:15px;margin:0 0 10px;font-weight:600}
+.mono{font-family:"IBM Plex Mono",ui-monospace,Menlo,monospace}
+.code div{display:flex;gap:10px;padding:5px 8px;border-radius:6px;font-size:14px}
+.code .a{color:var(--mut);width:34px}.code .t{flex:1}.code .c{color:var(--mut);font-size:12px}
+.code div.on{background:var(--hot);outline:2px solid var(--acc)}
+.ctl{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:14px}
+button,select,input{font:inherit;padding:7px 12px;border-radius:7px;border:1px solid var(--line);background:var(--card);color:var(--ink)}
+button{cursor:pointer;font-weight:600}button.p{background:var(--acc);color:#fff;border-color:var(--acc)}
+:root[data-theme="dark"] button.p{color:#0e141c}
+button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+input{width:70px}
+.regs{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.reg{border:1px solid var(--line);border-radius:8px;padding:8px}
+.reg b{display:block;font-size:12px;color:var(--mut)}
+.reg .v{font-size:20px;font-weight:600}.reg .h{font-size:12px;color:var(--mut)}
+.reg.ch{background:var(--chg)}
+.flags{display:flex;gap:6px;margin-top:10px}
+.fl{flex:1;text-align:center;border:1px solid var(--line);border-radius:7px;padding:4px}
+.fl.on{background:var(--ok);color:#fff;border-color:var(--ok)}
+:root[data-theme="dark"] .fl.on,.fl.on{color:#fff}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0 12px}
+.chip{width:34px;height:34px;display:grid;place-items:center;border-radius:7px;background:var(--chip);font-weight:600;transition:all .3s}
+.chip.done{opacity:.35;transform:scale(.85)}.chip.cur{background:var(--hot);outline:2px solid var(--acc);transform:scale(1.12)}
+.bar{height:16px;border-radius:8px;background:var(--chip);overflow:hidden}
+.bar i{display:block;height:100%;width:0;background:var(--ok);transition:width .4s}
+.msg{min-height:44px;font-weight:600}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th,td{text-align:left;padding:4px 8px;border-bottom:1px solid var(--line)}
+.scroll{overflow-x:auto}
+.log{margin:0;padding-left:18px;color:var(--mut);font-size:13px;max-height:150px;overflow:auto}
+.full{grid-column:1/-1}
+@media(prefers-reduced-motion:reduce){*{transition:none!important}}
+</style></head><body><main>
+<h1>ARM simulator: sum of the first N natural numbers</h1>
+<p class="sub">Step through the same 6 instructions you ran in CPUlator. Default N = 10, expected sum = 55.</p>
+<div class="ctl">
+<label>N <input id="n" type="number" min="1" max="20" value="10"></label>
+<button class="p" id="step">Step</button><button id="run">Run</button><button id="reset">Reset</button>
+<label>Speed <select id="spd"><option value="900">Slow</option><option value="450" selected>Normal</option><option value="150">Fast</option></select></label>
+</div>
+<div class="grid">
+<section class="card"><h2>Program</h2><div class="code mono" id="code"></div></section>
+<section class="card"><h2>Registers and flags</h2>
+<div class="regs" id="regs"></div><div class="flags mono" id="flags"></div>
+<h2 style="margin-top:14px">Last instruction</h2><div class="msg" id="msg"></div></section>
+<section class="card full"><h2>Loop view: counter values being added</h2>
+<div class="chips mono" id="chips"></div>
+<div class="bar"><i id="bar"></i></div>
+<p class="sub" style="margin:6px 0 0" id="barlbl"></p></section>
+<section class="card"><h2>Trace table</h2><div class="scroll"><table class="mono"><thead><tr><th>Pass</th><th>R0 after</th><th>R1 after</th></tr></thead><tbody id="trace"></tbody></table></div></section>
+<section class="card"><h2>Execution log</h2><ol class="log mono" id="log" reversed></ol></section>
+</div></main>
+<script>
+const $=id=>document.getElementById(id);
+const P=[["","MOV R0, #N","R0 = N (counter)"],["","MOV R1, #0","R1 = sum = 0"],["loop:","ADD R1, R1, R0","sum = sum + counter"],["","SUBS R0, R0, #1","counter − 1, sets flags"],["","BNE loop","jump if Z = 0"],["end:","B end","halt"]];
+let s,timer=null;
+const hex=v=>"0x"+(v>>>0).toString(16).padStart(8,"0");
+function reset(){stop();let n=Math.min(20,Math.max(1,parseInt($("n").value)||10));$("n").value=n;
+s={n,r0:0,r1:0,i:0,f:{N:0,Z:0,C:0,V:0},halt:false,pass:0,ch:[],trace:[],log:[],msg:"Press Step to run the first instruction."};render()}
+function step(){if(s.halt)return;let ch=[],m="";
+switch(s.i){
+case 0:s.r0=s.n;ch=["r0"];m="MOV: R0 ← "+s.n;s.i=1;break;
+case 1:s.r1=0;ch=["r1"];m="MOV: R1 ← 0";s.i=2;break;
+case 2:{const o=s.r1;s.r1+=s.r0;ch=["r1"];m="ADD: R1 ← "+o+" + "+s.r0+" = "+s.r1;s.i=3;break}
+case 3:{const o=s.r0;s.r0=o-1;s.f={N:s.r0<0?1:0,Z:s.r0===0?1:0,C:o>=1?1:0,V:0};s.pass++;ch=["r0"];
+s.trace.push([s.pass,s.r0,s.r1]);m="SUBS: R0 ← "+o+" − 1 = "+s.r0+(s.f.Z?", so Z = 1":", so Z = 0");s.i=4;break}
+case 4:if(!s.f.Z){s.i=2;m="BNE: Z = 0, so branch back to loop (0x08)"}else{s.i=5;m="BNE: Z = 1, so no branch; fall through to end"}break;
+case 5:s.halt=true;m="B end: halted. Final sum R1 = "+s.r1+" ("+hex(s.r1)+")";stop();break}
+s.ch=ch;s.msg=m;s.log.push(m);render()}
+function stop(){if(timer){clearInterval(timer);timer=null}$("run").textContent="Run"}
+function run(){if(timer){stop();return}if(s.halt)reset();$("run").textContent="Pause";timer=setInterval(step,+$("spd").value)}
+function render(){
+$("code").innerHTML=P.map((p,k)=>`<div class="${k===s.i&&!s.halt?"on":(k===s.i&&s.halt?"on":"")}"><span class="a">${hex(k*4).slice(-4)}</span><span class="t">${p[0]?p[0]+" ":""}${p[1].replace("#N","#"+s.n)}</span><span class="c">${p[2]}</span></div>`).join("");
+const R=[["R0",s.r0,"r0"],["R1 (sum)",s.r1,"r1"],["PC",s.i*4,"pc"]];
+$("regs").innerHTML=R.map(r=>`<div class="reg ${s.ch.includes(r[2])||(r[2]==="pc"&&s.log.length)?"ch":""}"><b>${r[0]}</b><div class="v mono">${r[1]}</div><div class="h mono">${hex(r[1])}</div></div>`).join("");
+$("flags").innerHTML=["N","Z","C","V"].map(k=>`<div class="fl ${s.f[k]?"on":""}">${k} = ${s.f[k]}</div>`).join("");
+$("msg").textContent=s.msg;
+let c="";for(let v=s.n;v>=1;v--){const cls=s.i===0&&!s.log.length?"":(v>s.r0?"done":(v===s.r0&&!s.halt?"cur":""));c+=`<div class="chip ${cls}">${v}</div>`}
+$("chips").innerHTML=c;const tot=s.n*(s.n+1)/2;$("bar").style.width=(s.r1/tot*100)+"%";
+$("barlbl").textContent="Running sum R1 = "+s.r1+" of "+tot+" (formula N(N+1)/2)";
+$("trace").innerHTML=s.trace.map(t=>`<tr><td>${t[0]}</td><td>${t[1]}</td><td>${t[2]}</td></tr>`).join("")||"<tr><td colspan=3>No passes yet</td></tr>";
+$("log").innerHTML=s.log.slice().reverse().map(l=>`<li>${l}</li>`).join("")}
+$("step").onclick=()=>{stop();step()};$("run").onclick=run;$("reset").onclick=reset;$("n").onchange=reset;
+$("spd").onchange=()=>{if(timer){stop();run()}};
+reset();
+</script></body></html>
