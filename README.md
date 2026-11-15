@@ -72,7 +72,3 @@ end:
 ├── README.md
 └── screenshots/      # CPUlator screenshots (optional)
 ```
-
-## Author
-
-Nakul, B.Tech CSE, SRM Institute of Science and Technology.
