@@ -2,7 +2,7 @@
 
 An interactive, browser-based simulation of a small ARM assembly program that adds the numbers 1 to N using a loop. Built for the ARM Processor Architecture, Instruction Sets and Programming assignment (Q7).
 
-**Live demo:** https://nakul28062007.github.io/REPO-NAME/
+**Live demo:** https://nakul28062007.github.io/arm_sum_simulation/
 
 ## What it does
 
